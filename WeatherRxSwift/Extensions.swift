@@ -12,13 +12,14 @@ import RxCocoa
 import SVProgressHUD
 
 extension Reactive where Base: SVProgressHUD {
-    /*public var isAnimating: AnyObserver<Bool> {
+    public var isAnimating: AnyObserver<Bool> {
         return AnyObserver { event in
             MainScheduler.ensureExecutingOnScheduler()
-            
+            print(event)
             switch (event){
             case .next(let value):
                 if value {
+                    SVProgressHUDStyle.dark
                     SVProgressHUD.show()
                 } else {
                     SVProgressHUD.dismiss()
@@ -30,15 +31,16 @@ extension Reactive where Base: SVProgressHUD {
                 break
             }
         }
-    }*/
+    }
     
-    public var isAnimating: UIBindingObserver<Base, Bool> {
+    /*public var isAnimating: UIBindingObserver<Base, Bool> {
         return UIBindingObserver(UIElement: self.base) { indicator, active in
+            print(active)
             if active {
-                indicator
+                SVProgressHUD.show()
             } else {
                 SVProgressHUD.dismiss()
             }
         }
-    }
+    }*/
 }

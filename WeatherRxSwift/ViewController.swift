@@ -18,8 +18,8 @@ class ViewController: UIViewController {
     
     let disposeBag = DisposeBag()
     
-    var shownCities: [String] = []
     let cities = ["New York", "Amsterdam", "Moscow", "Berlin", "Praga", "Polska"]
+    var shownCities: [String] = []
     
     lazy var refreshControl: UIRefreshControl = {
         let refreshControl = UIRefreshControl()
@@ -30,6 +30,7 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         //tableView.refreshControl = refreshControl
         tableView.backgroundView = refreshControl
         setupSearchBar()
@@ -42,23 +43,31 @@ class ViewController: UIViewController {
     
     func setupSearchBar() {
         
+        let progress = SVProgressHUD()
+        
         let indicator = ActivityIndicator()
         indicator.asObservable()
-            .bind(to: SVProgressHUD.)
+            .bind(to: progress.rx.isAnimating)
             .addDisposableTo(disposeBag)
         
-        let active = UIActivityIndicatorView()
-        active.isAnimating
+        /*var allCites: Variable<[CiteModel?]> = Variable([])
+        var searchQuery: Variable<String> = Variable("")
+        var shownCites: Observable<[CiteModel?]> = Observable .combineLatest(allCites.asObservable(), searchQuery.asObservable()) {
+            allCites, query in
+            return allCites.map { cites in cites.filter { $0.cite.containsString(query) } }
+        }*/
         
         searchBar
             .rx.text
             .orEmpty
-            .trackActivity(indicator)
-            .throttle(0.3, scheduler: MainScheduler.instance)
-            .distinctUntilChanged()
-            .filter {$0.characters.count > 0}
-            .subscribe(onNext: { [unowned self] query in
-                self.shownCities = self.cities.filter { $0.hasPrefix(query) }
+            .filter { $0.characters.count > 0 }
+            .flatMap { query -> Observable<[String]> in
+                return Observable.just(self.cities.filter { $0.hasPrefix(query) })
+                    .trackActivity(indicator)
+            }
+            .subscribe(onNext: { [unowned self] filteredCities in
+                self.shownCities = filteredCities
+                //self.shownCities = self.cities.filter { $0.hasPrefix(query) }
                 self.tableView.reloadData()
             })
             .addDisposableTo(disposeBag)
