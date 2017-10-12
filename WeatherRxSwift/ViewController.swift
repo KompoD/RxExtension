@@ -1,0 +1,85 @@
+//
+//  ViewController.swift
+//  WeatherRxSwift
+//
+//  Created by Nikita Merkel on 22.09.17.
+//  Copyright © 2017 Nikita Merkel. All rights reserved.
+//
+
+import UIKit
+import RxSwift
+import RxCocoa
+import SVProgressHUD
+
+class ViewController: UIViewController {
+
+    @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var searchBar: UISearchBar!
+    
+    let disposeBag = DisposeBag()
+    
+    var shownCities: [String] = []
+    let cities = ["New York", "Amsterdam", "Moscow", "Berlin", "Praga", "Polska"]
+    
+    lazy var refreshControl: UIRefreshControl = {
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector(handleRefresh(_:)), for: UIControlEvents.valueChanged)
+        
+        return refreshControl
+    }()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        //tableView.refreshControl = refreshControl
+        tableView.backgroundView = refreshControl
+        setupSearchBar()
+    }
+    
+    func handleRefresh(_ refreshControl: UIRefreshControl) {
+        print("lol")
+        refreshControl.endRefreshing()
+    }
+    
+    func setupSearchBar() {
+        
+        let indicator = ActivityIndicator()
+        indicator.asObservable()
+            .bind(to: SVProgressHUD.)
+            .addDisposableTo(disposeBag)
+        
+        let active = UIActivityIndicatorView()
+        active.isAnimating
+        
+        searchBar
+            .rx.text
+            .orEmpty
+            .trackActivity(indicator)
+            .throttle(0.3, scheduler: MainScheduler.instance)
+            .distinctUntilChanged()
+            .filter {$0.characters.count > 0}
+            .subscribe(onNext: { [unowned self] query in
+                self.shownCities = self.cities.filter { $0.hasPrefix(query) }
+                self.tableView.reloadData()
+            })
+            .addDisposableTo(disposeBag)
+    }
+}
+
+extension ViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return shownCities.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        cell.textLabel?.text = shownCities[indexPath.row]
+        
+        return cell
+    }
+}
+
+extension ViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+       print("Clicked")
+    }
+}
